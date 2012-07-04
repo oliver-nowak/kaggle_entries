@@ -35,10 +35,18 @@ def sim_pearson(x):
     return pear_data
 
 
+def clean_data(data, NoDataValue):
+    """Replace the NoDataValue with np.nan in order to avoid data skew when we 
+    calculate the Pearson correlation"""
+    data[data==NoDataValue] = np.nan
+    return data
+
+cleaned = clean_data(row1, 99.)
+print cleaned
 #sim_euclidean(row1, row2)
 #sim_pearson(row_set, test_row1)
 #print row_set
 #print test_row1
 #print test_array
-sim_pearson(row_set)
+#sim_pearson(row_set)
 #sim_pearson_r(row_set)
