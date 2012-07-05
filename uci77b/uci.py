@@ -3,6 +3,7 @@ import scipy.spatial.distance as spsd
 import numpy as np
 import scipy.stats
 import scipy.io
+from math import sqrt
 
 mat = scipy.io.loadmat('./data/kaggle77b_trainset.mat')
 
@@ -39,12 +40,13 @@ def sim_pearson(train_set, test_row, row_num):
     scipy.io.savemat('./data/'+ file_name, {'pearson_data':pear_data})
     print '... %s  data saved.',file_name
     return pear_data
+    
 
 def clean_data(data, NoDataValue):
     """Replace the NoDataValue with np.nan in order to avoid data skew when we 
     calculate the Pearson correlation"""
-    data[data==NoDataValue] = np.nan
-#    data[data==NoDataValue] = 0
+#   data[data==NoDataValue] = np.nan
+    data[data==NoDataValue] = 0
     return data
 
 def clean_train_set(data, file_name):
@@ -65,26 +67,77 @@ def clean_data_sets():
     clean_test_set(test_set, 'test_set.mat')
     print '+ cleaned test set...'
 
+
+def pears(train_item, test_item):
+    """Adapted from the _Collective Intelligence_ book p.13"""
+    si ={}
+
+    for i, val in enumerate(train_item):
+        if val != 0:
+            if test_item[i] != 0:
+                si[i]=1
+
+    n = len(si)
+
+    if n==0: return 0
+
+    sum1 = sum( [train_item[it] for it in si] )
+    sum2 = sum( [test_item[it] for it in si] )
+
+    sum1Sq = sum( [pow(train_item[it],2) for it in si] )
+    sum2Sq = sum( [pow(test_item[it],2) for it in si] )
+
+    pSum = sum([train_item[it]*test_item[it] for it in si])
+
+    num = pSum - (sum1 * sum2/n)
+    den = sqrt((sum1Sq - pow(sum1,2)/n) * (sum2Sq - pow(sum2, 2)/n))
+
+    if den == 0: return 0
+
+    r = num / den
+
+    return r
+    #print 'r: ', r
+    
+    
+
 clean_data_sets()
 
 train_mat = scipy.io.loadmat('./data/train_set.mat')
 train_data = train_mat['data']
 print '+ loaded cleaned training data.'
+print train_data[0]
 
 test_mat = scipy.io.loadmat('./data/test_set.mat')
 test_data = test_mat['data']
 print '+ loaded cleaned test data.'
 print test_data[0]
-#load_clean_train_data()
-#load_clean_test_data()
-#sim_pearson(train_mat, test_data[0], 0)
 
-#cleaned = clean_data(row1, 99.)
-#print cleaned
-#sim_euclidean(row1, row2)
-sim_pearson(train_data, test_data[0], 0)
-#print row_set
-#print test_row1
-#print test_array
-#sim_pearson(row_set)
-#sim_pearson_r(row_set)
+
+print len(train_data)
+
+# NOTE ---- using this method results in +.10 in sim score
+pear_list = []
+m = len(train_data)
+for item in xrange(1):
+    pear = np.corrcoef(train_data[item],test_data[0])
+    data = (pear[0][1], item)
+    pear_list.append(data)
+
+print pear_list
+
+# NOTE ---- using this method (hand-crafted pearson) results in -.10 in sim score
+pears(train_data[0], test_data[0])
+
+pear_data = []
+for item in xrange(m):
+    pear = pears(train_data[item], test_data[0])
+    data = (pear,item)
+    pear_data.append(data)
+
+pear_data.sort()
+pear_data.reverse()
+print pear_data[:10]
+
+
+#scipy.io.savemat('./data/pear_test.mat', {'data':pear_data})
