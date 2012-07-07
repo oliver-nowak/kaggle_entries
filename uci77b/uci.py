@@ -90,6 +90,35 @@ def get_prediction_indices():
     scipy.io.savemat('./data/prediction_indices.mat', {'data':indices})
     print '+ saved prediction_indices.mat'
 
+def compile_pear_scores():
+    # NOTE VALIDATED WITH EXCEL
+    pear_data = np.zeros( (3000, 21983) )
+#    pear_list = []
+    m = len(train_data)
+    k = len(test_data)
+    row_count = 0
+    col_count = 0
+    for test_subject in xrange(k):
+        for item in xrange(m):
+            pear = np.corrcoef(train_data[item],test_data[test_subject])
+#            data = (pear[0][1], item)
+            pear_data[row_count][col_count] = pear[0][1]
+            col_count += 1
+#            pear_list.append(data)
+        row_count += 1
+        print 'cols : %s' % col_count
+        print '...calculated %s of 3000 rows' % row_count
+        col_count = 0
+
+    print 'preparing to save pear matrix...'
+    scipy.io.savemat('./data/pear_set.mat', {'data': pear_data})
+#    scipy.io.savemat('./data/test_set_pear_matrix.mat', {'data':pear_list})
+    print '...pear matrix saved.'
+    print pear_data[0][0]
+#    print pear_list[0]
+
+
+
 get_prediction_indices()
 
 clean_data_sets()
@@ -113,28 +142,26 @@ print '+ loaded prediction indices.'
 print '+ total prediction indices : %s ' % len(pred_data)
 print pred_data[0]
 
+#pear_mat = scipy.io.loadmat('./data/test_set_pear_matrix.mat')
+#pear_data = pear_mat['data']
+#print '+ loaded pear data.'
+#print '+ total pear scores : %s ' % len(pear_data)
+#print pear_data[0]
+
+
+
 # exporting first row of test and train data to validate pearson calculation in excel
 #export_to_file(train_data[0], 'train_data_row1.csv')
 #export_to_file(test_data[0], 'test_data_row1.csv')
 
-
-# NOTE ---- using this method results in +.10 in sim score
-# NOTE VALIDATED WITH EXCEL
-pear_list = []
-m = len(train_data)
-for item in xrange(m):
-    pear = np.corrcoef(train_data[item],test_data[0])
-    data = (pear[0][1], item)
-    pear_list.append(data)
-
-print pear_list[0]
+compile_pear_scores()
 
 
 #TASKS
 ######
 #DONE: validate pearson calculation in excel - validated in excel
 #DONE: get erased prediction indices from test_set
-#TODO: automate pearson calculation for test_set data
+#DONE: automate pearson calculation for test_set data
 #TODO: add remaining code to calculate recommendations
 #TODO: test if iterative calculation on remaining missing prediction indices are affected
 #TODO: implement item-based filtering to see if prediction accuracy is increased
