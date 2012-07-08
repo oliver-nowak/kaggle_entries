@@ -166,7 +166,7 @@ print '+ loaded prediction indices.'
 print '+ total prediction indices : %s ' % len(pred_data)
 print pred_data[0]
 
-pear_mat = scipy.io.loadmat('./data/pear_set.mat')
+pear_mat = scipy.io.loadmat('./data/y1_pear_set.mat')
 pear_data = pear_mat['data']
 print '+ loaded pear data.'
 print '+ total pear scores : %s ' % len(pear_data)
@@ -181,7 +181,7 @@ test_data = test_mat['data']
 print '+ loaded recompiled y1_test_set.'
 print '+ should be 0.9 : %s' % test_data[0][7]
 
-compile_pear_scores()
+#compile_pear_scores()
 
 # initialize some start vars
 row = 0
@@ -254,10 +254,10 @@ for row in pear_data:
     
     pear_ind += 1
 
-scipy.io.savemat('./data/predictions.mat', {'data': y_list})
+scipy.io.savemat('./data/y1_predictions.mat', {'data': y_list})
 print '+ saving predictions matrix.'
 
-csv_writer = csv.writer(open('./data/predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+csv_writer = csv.writer(open('./data/y1_predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
 for row in y_list:
     csv_writer.writerow(row)
