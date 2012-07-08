@@ -121,24 +121,22 @@ def add_y1_pear_scores():
     # load predictions
     y_mat = scipy.io.loadmat('./data/predictions.mat')
     y_data = y_mat['data'] 
-
     # iterate through test-set
-    for i,row in enumerate(test_set):
+    for i,row in enumerate(test_data):
+        #print i
+        #print row
         # find y1 in predictions data set
         y1 = y_data[i][0]
 
         # find y1 index in prediction indices data set
         y1_ind = pred_data[i][0]
         
-        print 'before %s' % row[y1_ind]
         # copy value of y1 into test set at the correct index
         row[y1_ind] = y1
 
-        print 'after %s' % row[y1_ind]
-
     # save new test_set
-#    scipy.io.savemat('./data/y1_test_set.mat')
-#    print '+ saved y1_test_set.'
+    scipy.io.savemat('./data/y1_test_set.mat', {'data': test_data})
+    print '+ saved y1_test_set.'
         
 
 get_prediction_indices()
@@ -171,7 +169,7 @@ print '+ total pear scores : %s ' % len(pear_data)
 print pear_data[0]
 
 
-#add_y1_pear_scores()
+add_y1_pear_scores()
 
 
 # initialize some start vars
@@ -198,11 +196,7 @@ ind = 0
 print '+ total m to init : %s ' % m
 print '+ total train_data : %s ' % len(train_data)
 for item in train_data:
-    #print '+ initializing y vecs with ind %s' % ind
     y1_rating = item[y1]
-    #print 'ind %s' % ind
-    #print 'y1 %s' %y1_rating
-    #print '@ %s' % y1_vec[ind]
     y1_vec[ind] = y1_rating
 
     y2_rating = item[y2]
@@ -227,7 +221,7 @@ print 'y3_norm_scalar : %s ' % y3_norm_scalar
 # this prediction is normalized using the normalize_scalar calculated above in order
 # to get the correct prediction value of yx.
 
-y_list = np.zeros( (m, 3) )
+y_list = np.zeros( (k, 3) )
 pear_ind = 0
 for row in pear_data:
     # (1 x 21983).(21983 x 1)
@@ -264,6 +258,9 @@ print '+ saving predictions csv file.'
 #DONE: get erased prediction indices from test_set
 #DONE: automate pearson calculation for test_set data
 #DONE: add remaining code to calculate recommendations
+#TODO: see if we can increase the float precision by configuring the numpy dtype
+#DONE: validate that entire calculated float precision is being written to csv
+#TODO: validate that EXCEL is _not_ rounding float values - values look rounded in EXCEL but not in console when mat is loaded
 #TODO: test if iterative calculation on remaining missing prediction indices are affected
 #TODO: implement item-based filtering to see if prediction accuracy is increased
 
