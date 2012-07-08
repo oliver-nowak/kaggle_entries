@@ -131,17 +131,21 @@ def add_y1_pear_scores():
         #print row
         # find y1 in predictions data set
         y1 = y_data[i][0]
+        y2 = y_data[i][1]
 
         # find y1 index in prediction indices data set
         y1_ind = pred_data[i][0]
-        
+        y2_ind = pred_data[i][1]
+
         # copy value of y1 into test set at the correct index
         row[y1_ind] = y1
+        row[y2_ind] = y2
 
     # save new test_set
     scipy.io.savemat('./data/y1_test_set.mat', {'data': test_data})
     print '+ saved y1_test_set.'
-        
+
+
 
 get_prediction_indices()
 
@@ -157,7 +161,8 @@ test_mat = scipy.io.loadmat('./data/test_set.mat')
 test_data = test_mat['data']
 print '+ loaded cleaned test data.'
 print '+ total test_data records : %s ' % len(test_data)
-print '+ should be 0: %s ' % test_data[0][7]
+print '+ y1 should be 0: %s ' % test_data[0][7]
+print '+ y2 should be 0: %s ' % test_data[0][34]
 
 
 pred_mat = scipy.io.loadmat('./data/prediction_indices.mat')
@@ -173,13 +178,17 @@ print '+ total pear scores : %s ' % len(pear_data)
 print pear_data[0]
 
 
-#add_y1_pear_scores()
+add_y1_pear_scores()
 
 #load recompiled test_data that includes the y1 column
 test_mat = scipy.io.loadmat('./data/y1_test_set.mat')
 test_data = test_mat['data']
 print '+ loaded recompiled y1_test_set.'
-print '+ should be 0.9 : %s' % test_data[0][7]
+print '+ should be 0.9060 : %s' % test_data[0][7]
+print '+ should be 0.2411 : %s' % test_data[0][34]
+
+
+exit()
 
 #compile_pear_scores()
 
