@@ -8,20 +8,20 @@ mat = scipy.io.loadmat('./data/kaggle77b_trainset.mat')
 
 test_mat = scipy.io.loadmat('./data/kaggle77b_testset.mat')
 
-row1 = mat['trainset'][0]
-row2 = mat['trainset'][1]
-row_set = mat['trainset'][:10]
+#row1 = mat['trainset'][0]
+#row2 = mat['trainset'][1]
+#row_set = mat['trainset'][:10]
 
 
-test_row1 = test_mat['testset'][0]
-test_row2 = test_mat['testset'][1]
+#test_row1 = test_mat['testset'][0]
+#test_row2 = test_mat['testset'][1]
 
 
-test_array = np.array([row1, test_row1])
+#test_array = np.array([row1, test_row1])
 
 train_set = mat['trainset']
 test_set = test_mat['testset']
-test_row_set = test_mat['testset'][:2]
+#test_row_set = test_mat['testset'][:2]
 
 
 def sim_euclidean(u, v):
@@ -94,18 +94,15 @@ def get_prediction_indices():
 def compile_pear_scores():
     # NOTE VALIDATED WITH EXCEL
     pear_data = np.zeros( (3000, 21983) )
-#    pear_list = []
     m = len(train_data)
     k = len(test_data)
     row_count = 0
     col_count = 0
-    for test_subject in xrange(1):
+    for test_subject in xrange(k):
         for item in xrange(m):
             pear = np.corrcoef(train_data[item],test_data[test_subject])
-#            data = (pear[0][1], item)
             pear_data[row_count][col_count] = pear[0][1]
             col_count += 1
-#            pear_list.append(data)
         row_count += 1
         print 'cols : %s' % col_count
         print '...calculated %s of 3000 rows' % row_count
@@ -113,10 +110,8 @@ def compile_pear_scores():
 
     print 'preparing to save pear matrix...'
     scipy.io.savemat('./data/pear_set.mat', {'data': pear_data})
-#    scipy.io.savemat('./data/test_set_pear_matrix.mat', {'data':pear_list})
     print '...pear matrix saved.'
     print pear_data[0][0]
-#    print pear_list[0]
 
 
 
@@ -218,7 +213,7 @@ for row in pear_data:
 scipy.io.savemat('./data/predictions.mat', {'data': y_list})
 print '+ saving predictions matrix.'
 
-csv_writer = csv.writer(open('predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+csv_writer = csv.writer(open('./data/predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
 for row in y_list:
     csv_writer.writerow(row)
