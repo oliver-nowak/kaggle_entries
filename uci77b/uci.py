@@ -2,6 +2,7 @@ import scipy.io
 import scipy.spatial.distance as spsd
 import numpy as np
 import scipy.stats
+import csv
 
 mat = scipy.io.loadmat('./data/kaggle77b_trainset.mat')
 
@@ -98,7 +99,7 @@ def compile_pear_scores():
     k = len(test_data)
     row_count = 0
     col_count = 0
-    for test_subject in xrange(k):
+    for test_subject in xrange(1):
         for item in xrange(m):
             pear = np.corrcoef(train_data[item],test_data[test_subject])
 #            data = (pear[0][1], item)
@@ -142,27 +143,93 @@ print '+ loaded prediction indices.'
 print '+ total prediction indices : %s ' % len(pred_data)
 print pred_data[0]
 
-#pear_mat = scipy.io.loadmat('./data/test_set_pear_matrix.mat')
-#pear_data = pear_mat['data']
-#print '+ loaded pear data.'
-#print '+ total pear scores : %s ' % len(pear_data)
-#print pear_data[0]
+pear_mat = scipy.io.loadmat('./data/test_set_pear_matrix.mat')
+pear_data = pear_mat['data']
+print '+ loaded pear data.'
+print '+ total pear scores : %s ' % len(pear_data)
+print pear_data[0]
 
 
 
-# exporting first row of test and train data to validate pearson calculation in excel
-#export_to_file(train_data[0], 'train_data_row1.csv')
-#export_to_file(test_data[0], 'test_data_row1.csv')
 
-compile_pear_scores()
+# initialize some start vars
+row = 0
+k   = len(train_data)
+m   = len(test_data)
 
+
+# first missing joke of _first test data row_ to predict
+y1 = pred_data[row][0]
+y2 = pred_data[row][1]
+y3 = pred_data[row][3]
+
+print '+ current row : %s' % row
+print '+ indice to predict: %s' % y1
+
+# create a vector containing all y1 ratings in training set
+# each row is one rating label from the training set
+y1_vec = np.zeros( (m,1) )
+y2_vec = np.zeros( (m,1) )
+y3_vec = np.zeros( (m,1) )
+ind = 0
+for item in train_data:
+    y1_rating = item[y1]
+    y1_vec[ind] = y1_rating
+
+    y2_rating = item[y2]
+    y2_vec[ind] = y2_rating
+
+    y3_rating = item[y3]
+    y3_vec[ind] = y3_rating
+
+    ind += 1
+
+# calculate the normalize scaler by summing every rating of yi
+y1_norm_scalar = np.sum( y1_vec )
+y2_norm_scalar = np.sum( y2_vec )
+y3_norm_scalar = np.sum( y3_vec )
+
+# for every test row, calculate the dot product of the row and the ratings vector
+# this will also sum the values, leaving one unnormalized scalar value as the prediction
+# for that row (test_subject) of yx.
+# this prediction is normalized using the normalize_scalar calculated above in order
+# to get the correct prediction value of yx.
+
+y_list = np.zeros( (m, 3) )
+pear_ind = 0
+for row in pear_data:
+    # (1 x 21983).(21983 x 1)
+    # results in one unnormalized number per test_set item (~3000 rows, 1 column) 
+    # normalized by the norm_yx scalar for yx rating
+
+    y1_sim = np.dot(row, y1_vec) 
+    norm_y1 = y1_sim / y1_norm_scalar
+    y_list[pear_ind][0] = norm_y1
+    
+    y2_sim = np.dot(row, y2_vec)
+    norm_y2 = y2_sim / y2_norm_scalar
+    y_list[pear_ind][1] = norm_y2
+
+    y3_sim = np.dot(row, y3_vec)
+    norm_y3 = y3_sim / y3_norm_scalar
+    y_list[pear_ind][2] = norm_y3
+
+
+scipy.io.savemat('./data/predictions.mat', {'data': y_list})
+print '+ saving predictions matrix.'
+
+csv_writer = csv.writer(open('predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+for row in y_list:
+    csv_writer.writerow(row)
+print '+ saving predictions csv file.'
 
 #TASKS
 ######
 #DONE: validate pearson calculation in excel - validated in excel
 #DONE: get erased prediction indices from test_set
 #DONE: automate pearson calculation for test_set data
-#TODO: add remaining code to calculate recommendations
+#DONE: add remaining code to calculate recommendations
 #TODO: test if iterative calculation on remaining missing prediction indices are affected
 #TODO: implement item-based filtering to see if prediction accuracy is increased
 
