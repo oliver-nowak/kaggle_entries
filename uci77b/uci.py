@@ -8,20 +8,20 @@ mat = scipy.io.loadmat('./data/kaggle77b_trainset.mat')
 
 test_mat = scipy.io.loadmat('./data/kaggle77b_testset.mat')
 
-row1 = mat['trainset'][0]
-row2 = mat['trainset'][1]
-row_set = mat['trainset'][:10]
+#row1 = mat['trainset'][0]
+#row2 = mat['trainset'][1]
+#row_set = mat['trainset'][:10]
 
 
-test_row1 = test_mat['testset'][0]
-test_row2 = test_mat['testset'][1]
+#test_row1 = test_mat['testset'][0]
+#test_row2 = test_mat['testset'][1]
 
 
-test_array = np.array([row1, test_row1])
+#test_array = np.array([row1, test_row1])
 
 train_set = mat['trainset']
 test_set = test_mat['testset']
-test_row_set = test_mat['testset'][:2]
+#test_row_set = test_mat['testset'][:2]
 
 
 def sim_euclidean(u, v):
@@ -94,18 +94,15 @@ def get_prediction_indices():
 def compile_pear_scores():
     # NOTE VALIDATED WITH EXCEL
     pear_data = np.zeros( (3000, 21983) )
-#    pear_list = []
     m = len(train_data)
     k = len(test_data)
     row_count = 0
     col_count = 0
-    for test_subject in xrange(1):
+    for test_subject in xrange(k):
         for item in xrange(m):
             pear = np.corrcoef(train_data[item],test_data[test_subject])
-#            data = (pear[0][1], item)
             pear_data[row_count][col_count] = pear[0][1]
             col_count += 1
-#            pear_list.append(data)
         row_count += 1
         print 'cols : %s' % col_count
         print '...calculated %s of 3000 rows' % row_count
@@ -113,12 +110,36 @@ def compile_pear_scores():
 
     print 'preparing to save pear matrix...'
     scipy.io.savemat('./data/pear_set.mat', {'data': pear_data})
-#    scipy.io.savemat('./data/test_set_pear_matrix.mat', {'data':pear_list})
     print '...pear matrix saved.'
     print pear_data[0][0]
-#    print pear_list[0]
 
 
+def add_y1_pear_scores():
+    """This function adds the predicted y1 scores back into the test-set as a 
+    'feed-forward' function to get better y2 and y3 predictions. (EXPERIMENTAL)"""
+    
+    # load predictions
+    y_mat = scipy.io.loadmat('./data/predictions.mat')
+    y_data = y_mat['data'] 
+
+    # iterate through test-set
+    for i,row in enumerate(test_set):
+        # find y1 in predictions data set
+        y1 = y_data[i][0]
+
+        # find y1 index in prediction indices data set
+        y1_ind = pred_data[i][0]
+        
+        print 'before %s' % row[y1_ind]
+        # copy value of y1 into test set at the correct index
+        row[y1_ind] = y1
+
+        print 'after %s' % row[y1_ind]
+
+    # save new test_set
+#    scipy.io.savemat('./data/y1_test_set.mat')
+#    print '+ saved y1_test_set.'
+        
 
 get_prediction_indices()
 
@@ -150,6 +171,7 @@ print '+ total pear scores : %s ' % len(pear_data)
 print pear_data[0]
 
 
+#add_y1_pear_scores()
 
 
 # initialize some start vars
@@ -178,6 +200,9 @@ print '+ total train_data : %s ' % len(train_data)
 for item in train_data:
     #print '+ initializing y vecs with ind %s' % ind
     y1_rating = item[y1]
+    #print 'ind %s' % ind
+    #print 'y1 %s' %y1_rating
+    #print '@ %s' % y1_vec[ind]
     y1_vec[ind] = y1_rating
 
     y2_rating = item[y2]
@@ -221,13 +246,17 @@ for row in pear_data:
     y3_sim = np.dot(row, y3_vec)
     norm_y3 = y3_sim / y3_norm_scalar
     y_list[pear_ind][2] = norm_y3
+<<<<<<< HEAD
 	
+=======
+
+>>>>>>> 966d0e4076cbeb2c797b363add882b8e2f72735c
     pear_ind += 1
 
 scipy.io.savemat('./data/predictions.mat', {'data': y_list})
 print '+ saving predictions matrix.'
 
-csv_writer = csv.writer(open('predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+csv_writer = csv.writer(open('./data/predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
 for row in y_list:
     csv_writer.writerow(row)
