@@ -109,9 +109,13 @@ def compile_pear_scores():
         col_count = 0
 
     print 'preparing to save pear matrix...'
-    scipy.io.savemat('./data/pear_set.mat', {'data': pear_data})
+#    scipy.io.savemat('./data/pear_set.mat', {'data': pear_data})
+    scipy.io.savemat('./data/y1_pear_set.mat', {'data': pear_data})
     print '...pear matrix saved.'
     print pear_data[0][0]
+
+    print 'Exiting.'
+    exit()
 
 
 def add_y1_pear_scores():
@@ -153,7 +157,7 @@ test_mat = scipy.io.loadmat('./data/test_set.mat')
 test_data = test_mat['data']
 print '+ loaded cleaned test data.'
 print '+ total test_data records : %s ' % len(test_data)
-print test_data[0]
+print '+ should be 0: %s ' % test_data[0][7]
 
 
 pred_mat = scipy.io.loadmat('./data/prediction_indices.mat')
@@ -169,8 +173,15 @@ print '+ total pear scores : %s ' % len(pear_data)
 print pear_data[0]
 
 
-add_y1_pear_scores()
+#add_y1_pear_scores()
 
+#load recompiled test_data that includes the y1 column
+test_mat = scipy.io.loadmat('./data/y1_test_set.mat')
+test_data = test_mat['data']
+print '+ loaded recompiled y1_test_set.'
+print '+ should be 0.9 : %s' % test_data[0][7]
+
+compile_pear_scores()
 
 # initialize some start vars
 row = 0
