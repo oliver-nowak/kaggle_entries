@@ -246,11 +246,7 @@ for row in pear_data:
     y3_sim = np.dot(row, y3_vec)
     norm_y3 = y3_sim / y3_norm_scalar
     y_list[pear_ind][2] = norm_y3
-<<<<<<< HEAD
-	
-=======
-
->>>>>>> 966d0e4076cbeb2c797b363add882b8e2f72735c
+    
     pear_ind += 1
 
 scipy.io.savemat('./data/predictions.mat', {'data': y_list})
