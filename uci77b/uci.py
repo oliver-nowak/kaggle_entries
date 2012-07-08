@@ -114,6 +114,32 @@ def compile_pear_scores():
     print pear_data[0][0]
 
 
+def add_y1_pear_scores():
+    """This function adds the predicted y1 scores back into the test-set as a 
+    'feed-forward' function to get better y2 and y3 predictions. (EXPERIMENTAL)"""
+    
+    # load predictions
+    y_mat = scipy.io.loadmat('./data/predictions.mat')
+    y_data = y_mat['data'] 
+
+    # iterate through test-set
+    for i,row in enumerate(test_set):
+        # find y1 in predictions data set
+        y1 = y_data[i][0]
+
+        # find y1 index in prediction indices data set
+        y1_ind = pred_data[i][0]
+        
+        print 'before %s' % row[y1_ind]
+        # copy value of y1 into test set at the correct index
+        row[y1_ind] = y1
+
+        print 'after %s' % row[y1_ind]
+
+    # save new test_set
+#    scipy.io.savemat('./data/y1_test_set.mat')
+#    print '+ saved y1_test_set.'
+        
 
 get_prediction_indices()
 
@@ -138,25 +164,26 @@ print '+ loaded prediction indices.'
 print '+ total prediction indices : %s ' % len(pred_data)
 print pred_data[0]
 
-pear_mat = scipy.io.loadmat('./data/test_set_pear_matrix.mat')
+pear_mat = scipy.io.loadmat('./data/pear_set.mat')
 pear_data = pear_mat['data']
 print '+ loaded pear data.'
 print '+ total pear scores : %s ' % len(pear_data)
 print pear_data[0]
 
 
+#add_y1_pear_scores()
 
 
 # initialize some start vars
 row = 0
-k   = len(train_data)
-m   = len(test_data)
+m   = len(train_data)
+k   = len(test_data)
 
 
 # first missing joke of _first test data row_ to predict
 y1 = pred_data[row][0]
 y2 = pred_data[row][1]
-y3 = pred_data[row][3]
+y3 = pred_data[row][2]
 
 print '+ current row : %s' % row
 print '+ indice to predict: %s' % y1
@@ -167,8 +194,14 @@ y1_vec = np.zeros( (m,1) )
 y2_vec = np.zeros( (m,1) )
 y3_vec = np.zeros( (m,1) )
 ind = 0
+
+print '+ total m to init : %s ' % m
+print '+ total train_data : %s ' % len(train_data)
 for item in train_data:
     y1_rating = item[y1]
+    #print 'ind %s' % ind
+    #print 'y1 %s' %y1_rating
+    #print '@ %s' % y1_vec[ind]
     y1_vec[ind] = y1_rating
 
     y2_rating = item[y2]
@@ -181,8 +214,11 @@ for item in train_data:
 
 # calculate the normalize scaler by summing every rating of yi
 y1_norm_scalar = np.sum( y1_vec )
+print 'y1_norm_scalar : %s ' % y1_norm_scalar
 y2_norm_scalar = np.sum( y2_vec )
+print 'y2_norm_scalar : %s ' % y2_norm_scalar
 y3_norm_scalar = np.sum( y3_vec )
+print 'y3_norm_scalar : %s ' % y3_norm_scalar
 
 # for every test row, calculate the dot product of the row and the ratings vector
 # this will also sum the values, leaving one unnormalized scalar value as the prediction
@@ -209,6 +245,7 @@ for row in pear_data:
     norm_y3 = y3_sim / y3_norm_scalar
     y_list[pear_ind][2] = norm_y3
 
+    pear_ind += 1
 
 scipy.io.savemat('./data/predictions.mat', {'data': y_list})
 print '+ saving predictions matrix.'
