@@ -110,7 +110,7 @@ def compile_pear_scores():
 
     print 'preparing to save pear matrix...'
 #    scipy.io.savemat('./data/pear_set.mat', {'data': pear_data})
-    scipy.io.savemat('./data/y1_pear_set.mat', {'data': pear_data})
+    scipy.io.savemat('./data/y1_y2_pear_set.mat', {'data': pear_data})
     print '...pear matrix saved.'
     print pear_data[0][0]
 
@@ -171,14 +171,14 @@ print '+ loaded prediction indices.'
 print '+ total prediction indices : %s ' % len(pred_data)
 print pred_data[0]
 
-pear_mat = scipy.io.loadmat('./data/y1_pear_set.mat')
+pear_mat = scipy.io.loadmat('./data/y1_y2_pear_set.mat')
 pear_data = pear_mat['data']
 print '+ loaded pear data.'
 print '+ total pear scores : %s ' % len(pear_data)
 print pear_data[0]
 
 
-add_y1_pear_scores()
+#add_y1_pear_scores()
 
 #load recompiled test_data that includes the y1 column
 test_mat = scipy.io.loadmat('./data/y1_test_set.mat')
@@ -187,8 +187,6 @@ print '+ loaded recompiled y1_test_set.'
 print '+ should be 0.9060 : %s' % test_data[0][7]
 print '+ should be 0.2411 : %s' % test_data[0][34]
 
-
-exit()
 
 #compile_pear_scores()
 
@@ -263,10 +261,10 @@ for row in pear_data:
     
     pear_ind += 1
 
-scipy.io.savemat('./data/y1_predictions.mat', {'data': y_list})
+scipy.io.savemat('./data/y2_predictions.mat', {'data': y_list})
 print '+ saving predictions matrix.'
 
-csv_writer = csv.writer(open('./data/y1_predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+csv_writer = csv.writer(open('./data/y2_predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
 for row in y_list:
     csv_writer.writerow(row)
