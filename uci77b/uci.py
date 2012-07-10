@@ -117,6 +117,23 @@ def compile_pear_scores():
     print 'Exiting.'
     exit()
 
+def compile_item_pear_scores():
+    #TODO: this should be validated in excel to confirm the right coefficients
+    train_items = train_data.T
+    print '+ train_items shape : %s' % str( train_items.shape)
+
+    pear_data = np.corrcoef( train_items )
+    
+    print '+ item pear data shape : %s ' % str(pear_data.shape)
+    print '+ preparing to save item pear matrix...'
+
+    scipy.io.savemat('./data/item_pear_set.mat', {'data': pear_data})
+    print '+ saved item pear matrix.'
+    print pear_data[0][:2]
+
+    print 'Exiting.'
+    exit()
+
 
 def add_y1_pear_scores():
     """This function adds the predicted y1 scores back into the test-set as a 
@@ -147,6 +164,72 @@ def add_y1_pear_scores():
 
 
 
+def calculate_item_ratings():
+    #get y indices
+    #test_user = 0
+    #y1x = pred_data[test_user][0]
+    #y2x = pred_data[test_user][1]
+    #y3x = pred_data[test_user][2]
+    #print y1x
+    
+    #y1_pearx = item_pear_data[y1x][:]
+    #y2_pearx = item_pear_data[y2x][:]
+    #y3_pearx = item_pear_data[y3x][:]
+    #print y1_pearx.shape
+    
+    #print test_data[0].shape
+
+    k = test_data.shape[0]
+    #print k
+
+    item_scores = np.zeros( (3000, 3) )
+    for user_row in xrange(k):
+        y1 = pred_data[user_row][0]
+        y2 = pred_data[user_row][1]
+        y3 = pred_data[user_row][2]
+
+        y1_pear = item_pear_data[y1][:]
+        y2_pear = item_pear_data[y2][:]
+        y3_pear = item_pear_data[y3][:]
+        
+        y1_rating = np.dot( test_data[user_row], y1_pear )
+        y2_rating = np.dot( test_data[user_row], y2_pear )
+        y3_rating = np.dot( test_data[user_row], y3_pear )
+
+        y1_norm = np.sum(y1_pear)
+        y2_norm = np.sum(y2_pear)
+        y3_norm = np.sum(y3_pear)
+
+        y1_norm_score = y1_rating / y1_norm
+        y2_norm_score = y2_rating / y2_norm
+        y3_norm_score = y3_rating / y3_norm
+        
+        item_scores[user_row][0] = y1_norm_score
+        item_scores[user_row][1] = y2_norm_score
+        item_scores[user_row][2] = y3_norm_score
+        
+
+    #test = np.dot( test_data[0], y1_pearx )
+    #print test
+
+    #norm = np.sum(y1_pearx)
+    #print 'norm value: %s' % norm
+
+    #norm_score = test / norm
+    #print 'norm_score : %s ' % norm_score
+
+    print 'item_score : %s ' % item_scores[0]
+
+    scipy.io.savemat('./data/item_predictions.mat', {'data': item_scores})
+    print '+ saved item_predictions.'
+
+    csv_writer = csv.writer(open('./data/item_predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+    for row in item_scores:
+        csv_writer.writerow(row)
+    print '+ saving predictions csv file.'
+
+
 get_prediction_indices()
 
 clean_data_sets()
@@ -171,24 +254,43 @@ print '+ loaded prediction indices.'
 print '+ total prediction indices : %s ' % len(pred_data)
 print pred_data[0]
 
-pear_mat = scipy.io.loadmat('./data/y1_y2_pear_set.mat')
+pear_mat = scipy.io.loadmat('./data/pear_set.mat')
 pear_data = pear_mat['data']
 print '+ loaded pear data.'
 print '+ total pear scores : %s ' % len(pear_data)
 print pear_data[0]
 
+item_pear_mat = scipy.io.loadmat('./data/item_pear_set.mat')
+item_pear_data = item_pear_mat['data']
+print '+ loaded item pear data.'
+print '+ total pear scores : %s' % str(item_pear_data.shape)
+print item_pear_data[0][:2]
 
 #add_y1_pear_scores()
 
 #load recompiled test_data that includes the y1 column
-test_mat = scipy.io.loadmat('./data/y1_test_set.mat')
-test_data = test_mat['data']
-print '+ loaded recompiled y1_test_set.'
-print '+ should be 0.9060 : %s' % test_data[0][7]
-print '+ should be 0.2411 : %s' % test_data[0][34]
+#test_mat = scipy.io.loadmat('./data/y1_test_set.mat')
+#test_data = test_mat['data']
+#print '+ loaded recompiled y1_test_set.'
+#print '+ should be 0.9060 : %s' % test_data[0][7]
+#print '+ should be 0.2411 : %s' % test_data[0][34]
 
 
 #compile_pear_scores()
+
+#compile_item_pear_scores()
+
+calculate_item_ratings()
+
+exit()
+
+
+
+
+
+##
+#   USER_BASED COLLABORATIVE FILTER CODE 
+##
 
 # initialize some start vars
 row = 0
@@ -278,7 +380,8 @@ print '+ saving predictions csv file.'
 #DONE: add remaining code to calculate recommendations
 #TODO: see if we can increase the float precision by configuring the numpy dtype
 #DONE: validate that entire calculated float precision is being written to csv
-#TODO: validate that EXCEL is _not_ rounding float values - values look rounded in EXCEL but not in console when mat is loaded
-#TODO: test if iterative calculation on remaining missing prediction indices are affected
+#DONE: validate that EXCEL is _not_ rounding float values - values look rounded in EXCEL but not in console when mat is loaded
+#DONE: test if iterative calculation on remaining missing prediction indices are affected
 #TODO: implement item-based filtering to see if prediction accuracy is increased
+#TODO: add test-set to item-based pearson calculation to see if prediction accuracy is increased
 
