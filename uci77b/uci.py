@@ -77,12 +77,13 @@ def clean_train_set(data, file_name):
     print 'shape of train set : %s' % str(data.shape)
     print 'shape of add train set : %s' % str(add_train_set.shape)
     cleaned_data = clean_data(data, 99.)
-    cleaned_add_train_data = clean_data(add_train_set, 99.)
+    #cleaned_add_train_data = clean_data(add_train_set, 99.)
 
-    appended_arr = np.append(cleaned_data, cleaned_add_train_data, axis=0)
+    #appended_arr = np.append(cleaned_data, cleaned_add_train_data, axis=0)
 
-    print 'shape of appended_arr : %s' % str(appended_arr.shape)
-    scipy.io.savemat('./data/'+file_name, {'data':appended_arr})
+    #print 'shape of appended_arr : %s' % str(appended_arr.shape)
+    #scipy.io.savemat('./data/'+file_name, {'data':appended_arr})
+    scipy.io.savemat('./data/'+file_name, {'data': cleaned_data})
     print '+ cleaned and saved train set.'
 
 def clean_test_set(data, file_name):
@@ -327,11 +328,13 @@ def calculate_item_ratings_w_pearson(topN=None):
         y3 = pred_data[user_row][2]
 
         y1_pear = item_pear_data[y1][:]
-
-        #print 'y1_pear_shape %s' % str(y1_pear.shape)
-        #print 'item_pear_data %s' % str(item_pear_data.shape)
+        y1_pear[y1] = 0.
+        
         y2_pear = item_pear_data[y2][:]
+        y2_pear[y2] = 0.
+        
         y3_pear = item_pear_data[y3][:]
+        y3_pear[y3] = 0.
 
         top_arr = []
         y1_pea = []
@@ -400,7 +403,7 @@ train_mat = scipy.io.loadmat('./data/train_set.mat')
 train_data = train_mat['data']
 print '+ loaded cleaned training data.'
 print '+ total train_data records : %s' % len(train_data)
-print train_data[0]
+print train_data[-1]
 
 test_mat = scipy.io.loadmat('./data/test_set.mat')
 test_data = test_mat['data']
@@ -421,6 +424,8 @@ print pred_data[0]
 #print '+ loaded pear data.'
 #print '+ total pear scores : %s ' % len(pear_data)
 #print pear_data[0]
+
+#compile_item_pear_scores()
 
 item_pear_mat = scipy.io.loadmat('./data/item_pear_set.mat')
 item_pear_data = item_pear_mat['data']
@@ -453,7 +458,7 @@ print item_cos_data[0][:]
 #print weighted_std(test_y, test_w)
 
 #exit()
-#calculate_item_ratings_w_pearson()
+calculate_item_ratings_w_pearson()
 #compile_adj_cosine_sim()
 #calculate_item_ratings_w_adj_cosine()
 exit()
