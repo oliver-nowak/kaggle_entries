@@ -3,8 +3,11 @@ import scipy.spatial.distance as spsd
 import numpy as np
 import scipy.stats
 import csv
+import math
 
 mat = scipy.io.loadmat('./data/kaggle77b_trainset.mat')
+
+add_mat = scipy.io.loadmat('./data/add_train_data.mat')
 
 test_mat = scipy.io.loadmat('./data/kaggle77b_testset.mat')
 
@@ -19,8 +22,9 @@ test_mat = scipy.io.loadmat('./data/kaggle77b_testset.mat')
 
 #test_array = np.array([row1, test_row1])
 
-train_set = mat['trainset']
-test_set = test_mat['testset']
+train_set = np.array(mat['trainset'], dtype=np.float64)
+add_train_set = np.array(add_mat['data'], dtype=np.float64)
+test_set = np.array(test_mat['testset'], dtype=np.float64)
 #test_row_set = test_mat['testset'][:2]
 
 
@@ -39,7 +43,29 @@ def sim_pearson(train_set, test_row, row_num):
     scipy.io.savemat('./data/'+ file_name, {'pearson_data':pear_data})
     print '... %s  data saved.',file_name
     return pear_data
+ 
+def weighted_std(arr, weights):
+    N = arr.shape[0]
+    #print 'N : %s ' % N
+
+    wtot = weights.sum()
     
+    wmean = (weights * arr).sum()/wtot
+
+    #werr2 = ( weights**2 * (arr-wmean)**2).sum()
+    #werr = np.sqrt(werr2)/wtot
+
+    #error imp 2
+    #werr = 1.0 / np.sqrt(wtot)
+    
+    wvar = ( weights *(arr-wmean)**2).sum()/( ((N - 1) * wtot)/N )
+    #wsdev = np.sqrt(wvar)
+    wsdev = wvar
+    return wsdev
+    
+#    average = np.average(values, weights=weights)
+#    variance = np.dot(weights, (values - average)**2) / weights.sum()
+#    return math.sqrt(variance)
 
 def clean_data(data, NoDataValue):
     """Replace the NoDataValue with np.nan in order to avoid data skew when we 
@@ -48,8 +74,15 @@ def clean_data(data, NoDataValue):
     return data
 
 def clean_train_set(data, file_name):
+    print 'shape of train set : %s' % str(data.shape)
+    print 'shape of add train set : %s' % str(add_train_set.shape)
     cleaned_data = clean_data(data, 99.)
-    scipy.io.savemat('./data/'+file_name, {'data':cleaned_data})
+    cleaned_add_train_data = clean_data(add_train_set, 99.)
+
+    appended_arr = np.append(cleaned_data, cleaned_add_train_data, axis=0)
+
+    print 'shape of appended_arr : %s' % str(appended_arr.shape)
+    scipy.io.savemat('./data/'+file_name, {'data':appended_arr})
     print '+ cleaned and saved train set.'
 
 def clean_test_set(data, file_name):
@@ -91,8 +124,8 @@ def get_prediction_indices():
     scipy.io.savemat('./data/prediction_indices.mat', {'data':indices})
     print '+ saved prediction_indices.mat'
 
-def compile_pear_scores():
-    # NOTE VALIDATED WITH EXCEL
+def compile_user_pear_scores():
+    """Build Pearson similiarity matrix based on user comparision"""
     pear_data = np.zeros( (3000, 21983) )
     m = len(train_data)
     k = len(test_data)
@@ -118,9 +151,16 @@ def compile_pear_scores():
     exit()
 
 def compile_item_pear_scores():
-    #TODO: this should be validated in excel to confirm the right coefficients
+    """Build Pearson similiarity matrix based on item comparision"""
     train_items = train_data.T
     print '+ train_items shape : %s' % str( train_items.shape)
+    
+    #test_items = test_data.T
+    #print '+ test_items shape : %s' % str( test_items.shape )
+
+    # appending test items to train item set - EXPERIMENTAL
+    #train_items = np.append(train_items, test_items, axis=1)
+    #print '+ append train_items : %s' % str( train_items.shape )
 
     pear_data = np.corrcoef( train_items )
     
@@ -163,25 +203,123 @@ def add_y1_pear_scores():
     print '+ saved y1_test_set.'
 
 
-
-def calculate_item_ratings():
-    #get y indices
-    #test_user = 0
-    #y1x = pred_data[test_user][0]
-    #y2x = pred_data[test_user][1]
-    #y3x = pred_data[test_user][2]
-    #print y1x
+def compile_avg_ratings():
+    """Compiles mean ratings of each user."""
+    k = train_data.shape[0]
     
-    #y1_pearx = item_pear_data[y1x][:]
-    #y2_pearx = item_pear_data[y2x][:]
-    #y3_pearx = item_pear_data[y3x][:]
-    #print y1_pearx.shape
+    # remove 0-rated elements so they dont affect the mean calculation
+    # calculate the mean rating across users
+    avg_rating = []
+    for i in xrange(k):
+        distilled_user = [x for x in train_data[i] if x != 0.]
+        avg_rating.append( np.mean(distilled_user, dtype=np.float64) )
     
-    #print test_data[0].shape
+    return avg_rating
 
+
+def compile_adj_cosine_sim():
+    """Build Adjusted Cosine similiarity matrix based on item comparisions."""
+    avg_rating = compile_avg_ratings()
+    print 'avg_rating size: %s' % len( avg_rating )
+    print 'avg_rating[:10] : %s' % avg_rating[:10]
+    
+    train_items = train_data.T
+    k = train_items.shape[0]
+    m = train_items.shape[1]
+    print 'k : %s' % k
+    print 'm : %s' % m
+
+    sim_data = np.zeros( (100, 100), dtype=np.float64 )
+    #k = 2
+
+    # iterate through matrix of 100 items and calculate the sim score
+    for i in xrange(k):
+        for j in xrange(k):
+            # subtract the avg user rating element-wise 
+            item_i = train_items[i] - avg_rating
+            item_j = train_items[j] - avg_rating
+
+            # find the dot product between the items
+            similiarity_score = np.dot(item_i, item_j)
+            #print 'sim : %s' % similiarity_score
+
+            # find the dot product of the squared difference
+            sq_diff_term_i = np.dot(item_i, item_i)
+            sq_diff_term_j = np.dot(item_j, item_j)
+
+            # reduce down via square-root
+            diff_term_i = math.sqrt(sq_diff_term_i)
+            diff_term_j = math.sqrt(sq_diff_term_j)
+
+            # multiply the terms in order to find the normalizer
+            total_diff = diff_term_i * diff_term_j
+
+            # calculate the adjusted cosine score
+            norm_sim_score = similiarity_score / total_diff
+            #print 'norm_sim_score : %s' % norm_sim_score
+            
+            # save the score 
+            sim_data[i][j] = norm_sim_score
+
+    #print sim_data
+    scipy.io.savemat('./data/adj_cosine_sim.mat', {'data':sim_data})
+    print '+ saved adjusted cosine similiarity matrix at single-precision.'
+
+    return sim_data
+
+def calculate_item_ratings_w_adj_cosine():
     k = test_data.shape[0]
-    #print k
 
+    #sim_scores = compile_adj_cosine_sim()
+    
+    sim_scores = item_cos_data
+    item_scores = np.zeros( (3000, 3), dtype=np.float64 )
+
+    #k = 2
+
+    for user_row in xrange(k):
+        
+        # find prediction indices for a particular user
+        y1 = pred_data[user_row][0]
+        y2 = pred_data[user_row][1]
+        y3 = pred_data[user_row][2]
+        
+        # find the adjusted cosine similiarity at yx
+        y1_cos = sim_scores[y1]
+        y2_cos = sim_scores[y2]
+        y3_cos = sim_scores[y3]
+
+        y1_rating = np.dot( test_data[user_row], y1_cos )
+        y2_rating = np.dot( test_data[user_row], y2_cos )
+        y3_rating = np.dot( test_data[user_row], y3_cos )
+
+        y1_norm = np.sum(np.absolute(y1_cos)) - 1.
+        y2_norm = np.sum(np.absolute(y2_cos)) - 1.
+        y3_norm = np.sum(np.absolute(y3_cos)) - 1.
+
+        y1_norm_score = y1_rating / math.fabs(y1_norm)
+        y2_norm_score = y2_rating / math.fabs(y2_norm)
+        y3_norm_score = y3_rating / math.fabs(y3_norm)
+
+        item_scores[user_row][0] = y1_norm_score
+        item_scores[user_row][1] = y2_norm_score
+        item_scores[user_row][2] = y3_norm_score
+
+
+    scipy.io.savemat('./data/item_predictions.mat', {'data': item_scores})
+    print '+ saved item_predictions.'
+
+    csv_writer = csv.writer(open('./data/adj_cos_item_predictions.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+    for row in item_scores:
+        csv_writer.writerow(row)
+    print '+ saving predictions csv file.'
+
+        
+
+def calculate_item_ratings_w_pearson(topN=None):
+    k = test_data.shape[0]
+    print 'test_data.shape : %s' % str(test_data.shape)
     item_scores = np.zeros( (3000, 3) )
     for user_row in xrange(k):
         y1 = pred_data[user_row][0]
@@ -189,35 +327,59 @@ def calculate_item_ratings():
         y3 = pred_data[user_row][2]
 
         y1_pear = item_pear_data[y1][:]
+
+        #print 'y1_pear_shape %s' % str(y1_pear.shape)
+        #print 'item_pear_data %s' % str(item_pear_data.shape)
         y2_pear = item_pear_data[y2][:]
         y3_pear = item_pear_data[y3][:]
+
+        top_arr = []
+        y1_pea = []
+        y2_pea = []
+        y3_pea = []
+        y1_rating = 0
+        y2_rating = 0
+        y3_rating = 0
         
-        y1_rating = np.dot( test_data[user_row], y1_pear )
-        y2_rating = np.dot( test_data[user_row], y2_pear )
-        y3_rating = np.dot( test_data[user_row], y3_pear )
+        if topN is not None:
+            top10_y1 = np.argsort( test_data[user_row] )[::-1]
+            top10_y1 = top10_y1[:topN]
+    
+            for top_item_index in xrange(topN):
+                top = test_data[user_row][top_item_index]
+                top_arr.append(top)
+    
+                top_p1 = y1_pear[top_item_index]
+                y1_pea.append(top_p1)
+            
+                top_p2 = y2_pear[top_item_index]
+                y2_pea.append(top_p2)
 
-        y1_norm = np.sum(y1_pear)
-        y2_norm = np.sum(y2_pear)
-        y3_norm = np.sum(y3_pear)
+                top_p3 = y3_pear[top_item_index]
+                y3_pea.append(top_p3)
 
+            y1_rating = np.dot( np.array(top_arr), y1_pea )
+            y2_rating = np.dot( np.array(top_arr), y2_pea )
+            y3_rating = np.dot( np.array(top_arr), y3_pea )
+
+        else:
+            y1_rating = np.dot( test_data[user_row], y1_pear )
+            y2_rating = np.dot( test_data[user_row], y2_pear )
+            y3_rating = np.dot( test_data[user_row], y3_pear )
+
+
+        y1_norm = np.sum(np.absolute(y1_pear)) - 1.
+        y2_norm = np.sum(np.absolute(y2_pear)) - 1.
+        y3_norm = np.sum(np.absolute(y3_pear)) - 1.
+            
         y1_norm_score = y1_rating / y1_norm
         y2_norm_score = y2_rating / y2_norm
         y3_norm_score = y3_rating / y3_norm
-        
+
         item_scores[user_row][0] = y1_norm_score
         item_scores[user_row][1] = y2_norm_score
         item_scores[user_row][2] = y3_norm_score
         
-
-    #test = np.dot( test_data[0], y1_pearx )
-    #print test
-
-    #norm = np.sum(y1_pearx)
-    #print 'norm value: %s' % norm
-
-    #norm_score = test / norm
-    #print 'norm_score : %s ' % norm_score
-
     print 'item_score : %s ' % item_scores[0]
 
     scipy.io.savemat('./data/item_predictions.mat', {'data': item_scores})
@@ -254,17 +416,23 @@ print '+ loaded prediction indices.'
 print '+ total prediction indices : %s ' % len(pred_data)
 print pred_data[0]
 
-pear_mat = scipy.io.loadmat('./data/pear_set.mat')
-pear_data = pear_mat['data']
-print '+ loaded pear data.'
-print '+ total pear scores : %s ' % len(pear_data)
-print pear_data[0]
+#pear_mat = scipy.io.loadmat('./data/pear_set.mat')
+#pear_data = pear_mat['data']
+#print '+ loaded pear data.'
+#print '+ total pear scores : %s ' % len(pear_data)
+#print pear_data[0]
 
 item_pear_mat = scipy.io.loadmat('./data/item_pear_set.mat')
 item_pear_data = item_pear_mat['data']
 print '+ loaded item pear data.'
 print '+ total pear scores : %s' % str(item_pear_data.shape)
-print item_pear_data[0][:2]
+print item_pear_data[0][:]
+
+item_cos_mat = scipy.io.loadmat('./data/adj_cosine_sim.mat')
+item_cos_data = item_cos_mat['data']
+print '+ loaded item cos data.'
+print '+ total item cos scores : %s' % str(item_cos_data.shape)
+print item_cos_data[0][:]
 
 #add_y1_pear_scores()
 
@@ -280,8 +448,14 @@ print item_pear_data[0][:2]
 
 #compile_item_pear_scores()
 
-calculate_item_ratings()
+#test_y = np.array([2,3,5,7,11,13,17,19,23])
+#test_w = np.array([1,1,0,0,4,1,2,1,0])
+#print weighted_std(test_y, test_w)
 
+#exit()
+#calculate_item_ratings_w_pearson()
+#compile_adj_cosine_sim()
+#calculate_item_ratings_w_adj_cosine()
 exit()
 
 
@@ -378,10 +552,11 @@ print '+ saving predictions csv file.'
 #DONE: get erased prediction indices from test_set
 #DONE: automate pearson calculation for test_set data
 #DONE: add remaining code to calculate recommendations
-#TODO: see if we can increase the float precision by configuring the numpy dtype
+#DONE: see if we can increase the float precision by configuring the numpy dtype
 #DONE: validate that entire calculated float precision is being written to csv
 #DONE: validate that EXCEL is _not_ rounding float values - values look rounded in EXCEL but not in console when mat is loaded
 #DONE: test if iterative calculation on remaining missing prediction indices are affected
-#TODO: implement item-based filtering to see if prediction accuracy is increased
-#TODO: add test-set to item-based pearson calculation to see if prediction accuracy is increased
-
+#DONE: implement item-based filtering to see if prediction accuracy is increased
+#DONE: add test-set to item-based pearson calculation to see if prediction accuracy is increased
+#DONE: try weighted std instead of weighted sum for normalizing predictions
+#TODO: try capping neighborhood to <=30 when calculating Pearson
