@@ -163,7 +163,7 @@ def compile_item_pear_scores():
     #train_items = np.append(train_items, test_items, axis=1)
     #print '+ append train_items : %s' % str( train_items.shape )
 
-    pear_data = np.corrcoef( train_items )
+    pear_data = np.corrcoef( train_items, bias=1 )
     
     print '+ item pear data shape : %s ' % str(pear_data.shape)
     print '+ preparing to save item pear matrix...'
@@ -287,8 +287,13 @@ def calculate_item_ratings_w_adj_cosine():
         
         # find the adjusted cosine similiarity at yx
         y1_cos = sim_scores[y1]
+        y1_cos[y1] = 0.
+
         y2_cos = sim_scores[y2]
+        y2_cos[y2] = 0.
+
         y3_cos = sim_scores[y3]
+        y3_cos[y2] = 0.
 
         y1_rating = np.dot( test_data[user_row], y1_cos )
         y2_rating = np.dot( test_data[user_row], y2_cos )
@@ -298,9 +303,9 @@ def calculate_item_ratings_w_adj_cosine():
         y2_norm = np.sum(np.absolute(y2_cos)) - 1.
         y3_norm = np.sum(np.absolute(y3_cos)) - 1.
 
-        y1_norm_score = y1_rating / math.fabs(y1_norm)
-        y2_norm_score = y2_rating / math.fabs(y2_norm)
-        y3_norm_score = y3_rating / math.fabs(y3_norm)
+        y1_norm_score = y1_rating / y1_norm
+        y2_norm_score = y2_rating / y2_norm
+        y3_norm_score = y3_rating / y3_norm
 
         item_scores[user_row][0] = y1_norm_score
         item_scores[user_row][1] = y2_norm_score
@@ -318,10 +323,10 @@ def calculate_item_ratings_w_adj_cosine():
 
         
 
-def calculate_item_ratings_w_pearson(topN=None):
+def calculate_item_ratings_w_pearson():
     k = test_data.shape[0]
     print 'test_data.shape : %s' % str(test_data.shape)
-    item_scores = np.zeros( (3000, 3) )
+    item_scores = np.zeros( (3000, 3), dtype=np.float64 )
     for user_row in xrange(k):
         y1 = pred_data[user_row][0]
         y2 = pred_data[user_row][1]
@@ -336,39 +341,13 @@ def calculate_item_ratings_w_pearson(topN=None):
         y3_pear = item_pear_data[y3][:]
         y3_pear[y3] = 0.
 
-        top_arr = []
-        y1_pea = []
-        y2_pea = []
-        y3_pea = []
-        y1_rating = 0
-        y2_rating = 0
-        y3_rating = 0
-        
-        if topN is not None:
-            top10_y1 = np.argsort( test_data[user_row] )[::-1]
-            top10_y1 = top10_y1[:topN]
-    
-            for top_item_index in xrange(topN):
-                top = test_data[user_row][top_item_index]
-                top_arr.append(top)
-    
-                top_p1 = y1_pear[top_item_index]
-                y1_pea.append(top_p1)
-            
-                top_p2 = y2_pear[top_item_index]
-                y2_pea.append(top_p2)
+        y1_rating = 0.
+        y2_rating = 0.
+        y3_rating = 0.      
 
-                top_p3 = y3_pear[top_item_index]
-                y3_pea.append(top_p3)
-
-            y1_rating = np.dot( np.array(top_arr), y1_pea )
-            y2_rating = np.dot( np.array(top_arr), y2_pea )
-            y3_rating = np.dot( np.array(top_arr), y3_pea )
-
-        else:
-            y1_rating = np.dot( test_data[user_row], y1_pear )
-            y2_rating = np.dot( test_data[user_row], y2_pear )
-            y3_rating = np.dot( test_data[user_row], y3_pear )
+        y1_rating = np.dot( test_data[user_row], y1_pear )
+        y2_rating = np.dot( test_data[user_row], y2_pear )
+        y3_rating = np.dot( test_data[user_row], y3_pear )
 
 
         y1_norm = np.sum(np.absolute(y1_pear)) - 1.
@@ -433,11 +412,11 @@ print '+ loaded item pear data.'
 print '+ total pear scores : %s' % str(item_pear_data.shape)
 print item_pear_data[0][:]
 
-item_cos_mat = scipy.io.loadmat('./data/adj_cosine_sim.mat')
-item_cos_data = item_cos_mat['data']
-print '+ loaded item cos data.'
-print '+ total item cos scores : %s' % str(item_cos_data.shape)
-print item_cos_data[0][:]
+#item_cos_mat = scipy.io.loadmat('./data/adj_cosine_sim.mat')
+#item_cos_data = item_cos_mat['data']
+#print '+ loaded item cos data.'
+#print '+ total item cos scores : %s' % str(item_cos_data.shape)
+#print item_cos_data[0][:]
 
 #add_y1_pear_scores()
 
