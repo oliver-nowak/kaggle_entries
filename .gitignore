@@ -16,3 +16,5 @@ uci77b/data/test_set.mat
 uci77b/data/test_data_row1.xls
 
 uci77b/data/train_set.mat
+
+uci77b/data/predictions.csv

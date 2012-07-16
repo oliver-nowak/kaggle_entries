@@ -217,6 +217,17 @@ def compile_avg_ratings():
     
     return avg_rating
 
+def compile_avg_item_ratings():
+    """Compiles mean ratings of each item."""
+    k = train_data.shape[1]
+    
+    avg_item_rating = []
+    for i in xrange(k):
+        distilled_item = [x for x in train_data[:][i] if x != 0.]
+        avg_item_rating.append( np.mean(distilled_item, dtype=np.float64) )
+
+    return avg_item_rating
+
 
 def compile_adj_cosine_sim():
     """Build Adjusted Cosine similiarity matrix based on item comparisions."""
@@ -343,7 +354,9 @@ def calculate_item_ratings_w_pearson():
 
         y1_rating = 0.
         y2_rating = 0.
-        y3_rating = 0.      
+        y3_rating = 0.     
+
+        
 
         y1_rating = np.dot( test_data[user_row], y1_pear )
         y2_rating = np.dot( test_data[user_row], y2_pear )
@@ -436,8 +449,8 @@ print item_pear_data[0][:]
 #test_w = np.array([1,1,0,0,4,1,2,1,0])
 #print weighted_std(test_y, test_w)
 
-#exit()
-calculate_item_ratings_w_pearson()
+compile_avg_item_ratings()
+#calculate_item_ratings_w_pearson()
 #compile_adj_cosine_sim()
 #calculate_item_ratings_w_adj_cosine()
 exit()
